@@ -1,4 +1,4 @@
-# 🖥️ Windows Active Directory & IT Administration
+# 🖥️ Windows Active Directory & IT Administration Lab
 
 A hands-on Windows IT environment built in **Microsoft Azure** to practice **Active Directory, Windows Server administration, DNS, Group Policy, user support, and network resource access**.
 
@@ -8,19 +8,19 @@ A hands-on Windows IT environment built in **Microsoft Azure** to practice **Act
 
 This project simulates a small company's Windows IT environment using a **Windows Server 2022 domain controller** and a **Windows 11 Pro employee workstation** hosted in Microsoft Azure.
 
-The server acts as the central system for managing employee accounts, computers, security settings, and shared resources. The Windows 11 workstation represents a computer that an employee would use within the company.
+The server acts as the central system for managing employee accounts, computers, security settings, and shared resources. I used the workstation to test the environment from an employee's perspective.
 
-I used this environment to practice common IT support and administration tasks, including:
+Through this project, I practiced common IT support and administration tasks:
 
 - 👤 Creating and managing employee accounts
-- 💻 Connecting employee computers to a company domain
+- 💻 Joining a workstation to a Windows domain
 - 🔑 Resetting passwords and unlocking accounts
 - 🔐 Applying account security policies
 - 🌐 Configuring and troubleshooting DNS and network connectivity
-- 👥 Managing employee access through security groups
-- 📁 Controlling access to shared company folders
+- 👥 Managing access with security groups
+- 📁 Controlling access to shared network folders
 
-The project demonstrates how several core Windows technologies work together to centrally manage and support users in a business environment.
+The result is a working Windows domain environment that demonstrates how core IT services work together to manage and support users.
 
 ---
 
@@ -54,12 +54,12 @@ The environment consists of two Windows virtual machines connected through the s
 
 | Area | Technology |
 | --- | --- |
-| **Cloud Platform** | Microsoft Azure |
+| **Cloud** | Microsoft Azure |
 | **Server** | Windows Server 2022 |
 | **Client** | Windows 11 Pro |
 | **Directory Services** | Active Directory Domain Services (AD DS) |
 | **Networking** | TCP/IP, Azure Virtual Network, DNS |
-| **Security Policies** | Group Policy |
+| **Security** | Group Policy |
 | **Administration** | ADUC, DNS Manager, Event Viewer |
 | **Command Line** | PowerShell |
 | **Remote Access** | Remote Desktop |
@@ -72,44 +72,40 @@ The environment consists of two Windows virtual machines connected through the s
 
 ## ☁️ Azure Infrastructure & Networking
 
-I first created the cloud infrastructure needed for the Windows environment.
+I created the `Active-Directory-Lab` resource group and `Active-Directory-VNet`, then deployed:
 
-Inside Microsoft Azure, I created the `Active-Directory-Lab` resource group and `Active-Directory-VNet`, then deployed:
+- 🖥️ **dc-1** — Windows Server 2022
+- 💻 **client-1** — Windows 11 Pro
 
-- 🖥️ **dc-1** — Windows Server 2022 server
-- 💻 **client-1** — Windows 11 Pro employee workstation
+I assigned `dc-1` the static private IP address `10.0.1.4` so the workstation could consistently locate the server and its network services. I then configured `client-1` to use `dc-1` as its DNS server.
 
-I configured `dc-1` with the static private IP address `10.0.1.4`, giving the server a consistent address that the workstation could use to locate important network services.
-
-I then configured `client-1` to use `dc-1` as its **DNS server** and verified the configuration with `ipconfig /all`.
-
-To confirm that the two computers could communicate, I tested the connection from `client-1`:
+To verify that the two systems could communicate, I tested connectivity from `client-1`:
 
 ```powershell
 ping 10.0.1.4
 ```
 
-The test returned four successful replies with **0% packet loss**, confirming that the employee workstation could communicate with the server.
+The test returned **0% packet loss**, confirming successful communication between the workstation and server.
 
 ![Client to Domain Controller Connectivity](images/client-dc-connectivity.png)
 
-> **Connectivity verification:** `client-1` successfully communicating with `dc-1` across the Azure virtual network.
+> **Connectivity:** `client-1` successfully communicating with `dc-1` across the Azure virtual network.
 
-> ⚠️ **Lab Note:** Windows Firewall profiles on `dc-1` were temporarily disabled as part of this isolated training environment. In a production environment, the firewall should remain enabled with only the required traffic permitted.
+> ⚠️ **Lab Note:** Windows Firewall profiles on `dc-1` were temporarily disabled for this isolated training environment. In a production environment, the firewall should remain enabled with only required traffic permitted.
 
 ---
 
 ## 🏢 Active Directory & User Administration
 
-I configured `dc-1` as a **domain controller**, allowing it to centrally manage employee accounts, computers, authentication, and security settings through **Active Directory Domain Services (AD DS)**.
+I configured `dc-1` as a **domain controller** using **Active Directory Domain Services (AD DS)**. This allowed the server to centrally manage employee accounts, computers, authentication, and security settings.
 
-I created the Windows domain:
+I created the domain:
 
 ```text
 mydomain.com
 ```
 
-Using **Active Directory Users and Computers (ADUC)**, I organized the environment into **Organizational Units (OUs)**, which act like folders for organizing different types of company accounts and computers.
+Using **Active Directory Users and Computers (ADUC)**, I organized the environment into **Organizational Units (OUs)**, which work like folders for separating different types of users and computers.
 
 ```text
 mydomain.com
@@ -121,9 +117,9 @@ mydomain.com
 └── _GROUPS
 ```
 
-I created a dedicated administrator account, joined `client-1` to the domain, and placed the workstation inside the `_CLIENTS` OU.
+I created a dedicated administrator account, joined `client-1` to the domain, and placed the workstation in the `_CLIENTS` OU.
 
-I also used a **provided PowerShell provisioning script** to generate employee accounts and practiced common user-support tasks such as:
+I also used a **provided PowerShell provisioning script** to generate employee accounts and practiced common support tasks:
 
 - 👤 Managing employee accounts
 - 🔑 Resetting passwords
@@ -133,93 +129,67 @@ I also used a **provided PowerShell provisioning script** to generate employee a
 - 💻 Testing employee domain logins
 - 🔎 Reviewing security activity with Event Viewer
 
-I used `whoami` from the employee workstation to verify that users were successfully authenticating through the domain.
-
 ![Active Directory Domain Structure](images/active-directory-structure.png)
 
-> **Active Directory:** Employee accounts, computers, administrators, and security groups organized within the `mydomain.com` domain.
+> **Active Directory:** Administrators, employees, computers, and security groups organized within the `mydomain.com` domain.
 
 ---
 
 ## 🔐 Group Policy & Account Security
 
-I used **Group Policy**, which allows administrators to centrally apply settings and security rules to domain users and computers, to configure an account lockout policy.
-
-The policy was configured to protect accounts from repeated failed login attempts:
+I used **Group Policy**, which allows administrators to apply security rules across a Windows domain, to configure an account lockout policy.
 
 | Setting | Configuration |
 | --- | --- |
-| **Account Lockout Threshold** | 5 invalid login attempts |
-| **Account Lockout Duration** | 30 minutes |
+| **Lockout Threshold** | 5 invalid login attempts |
+| **Lockout Duration** | 30 minutes |
 | **Reset Lockout Counter After** | 10 minutes |
 
-I applied the updated policy to `client-1` using:
+I applied the policy to `client-1` using:
 
 ```powershell
 gpupdate /force
 ```
 
-I then intentionally entered an incorrect password multiple times with a test employee account. After five failed attempts, the account became locked as expected.
+I then intentionally exceeded the failed-login limit with a test employee account and confirmed that the account became locked.
 
-I approached the issue as an IT administrator by locating the employee in Active Directory, unlocking the account, and confirming that the employee could successfully log in again.
-
-```text
-Failed Login Attempts
-        │
-        ▼
-  Account Locked
-        │
-        ▼
-  Locate User in AD
-        │
-        ▼
-   Unlock Account
-        │
-        ▼
-  Verify User Login ✓
-```
+To simulate a common **Help Desk scenario**, I located the employee account in Active Directory, unlocked it, and verified that the employee could successfully log in again.
 
 ![Group Policy Account Lockout Settings](images/account-lockout-policy.png)
 
-> **Account security:** A domain-wide account lockout policy configured and tested through Group Policy.
-
-This exercise simulated a common **Help Desk scenario**: restoring access for an employee whose account became locked after too many failed login attempts.
+> **Account security:** Domain account lockout settings configured and tested through Group Policy.
 
 ---
 
 ## 🌐 DNS & Name Resolution
 
-I configured and tested **DNS**, the service that allows computers to find network resources by name instead of requiring users to remember IP addresses.
+I configured and tested **DNS**, which allows computers to locate network resources by name instead of requiring users to remember IP addresses.
 
-For example, `client-1` initially could not find the hostname:
+Initially, `client-1` could not resolve the hostname:
 
 ```powershell
 ping mainframe
 ```
 
-Using DNS Manager on `dc-1`, I created an **A record** connecting the name `mainframe` to the server's IP address:
+Using DNS Manager on `dc-1`, I created an **A record** connecting the hostname to the server's IP address:
 
 ```text
 mainframe → 10.0.1.4
 ```
 
-After creating the record, I tested the hostname again from `client-1`.
-
-Windows successfully translated:
+After creating the record, I tested it again from `client-1` and successfully resolved:
 
 ```text
 mainframe.mydomain.com → 10.0.1.4
 ```
 
-and communicated with the server.
-
-During troubleshooting, I also cleared previously stored DNS information from the workstation using:
+I also practiced clearing the DNS cache with:
 
 ```powershell
 ipconfig /flushdns
 ```
 
-I also practiced creating a **CNAME alias**, which allows one hostname to act as an alternate name for another:
+and created a **CNAME alias** to practice alternate DNS names:
 
 ```text
 search → www.google.com
@@ -227,54 +197,44 @@ search → www.google.com
 
 ![DNS Name Resolution Test](images/dns-mainframe-resolution.png)
 
-> **DNS verification:** `client-1` successfully resolving `mainframe.mydomain.com` to `10.0.1.4` through the DNS server.
+> **DNS verification:** `client-1` successfully resolving `mainframe.mydomain.com` to `10.0.1.4`.
 
-The basic troubleshooting process was:
-
-**Name does not resolve → check DNS → configure the record → retest → verify the fix.**
+**Troubleshooting flow:** Name fails to resolve → check DNS → configure record → retest → verify the fix.
 
 ---
 
 ## 📁 File Shares & Access Control
 
-I configured shared network folders on `dc-1` to practice controlling which employees could access company resources.
+I created shared network folders on `dc-1` to practice controlling employee access to company resources.
 
-Different folders were given different access levels:
-
-| Resource | Who Can Access It | Access |
+| Resource | Authorized Users | Access |
 | --- | --- | --- |
 | `read-access` | Domain Users | Read |
 | `write-access` | Domain Users | Read/Write |
 | `no-access` | Domain Admins | Read/Write |
 | `accounting` | ACCOUNTANTS | Read/Write |
 
-From the employee workstation, I connected to the server using:
+From the employee workstation, I connected to:
 
 ```text
 \\dc-1
 ```
 
-I then tested the permissions from an employee account:
+I verified that an employee could:
 
-- 👁️ `read-access` — employee could view files but could not create new ones
-- ✏️ `write-access` — employee could create files
-- 🚫 `no-access` — employee was denied access
+- 👁️ View but not create files in `read-access`
+- ✏️ Create files in `write-access`
+- 🚫 Not access the restricted `no-access` folder
 
 ![Network File Shares](images/network-file-shares.png)
 
-> **Network shares:** Shared company resources hosted on `dc-1` and accessed from the employee workstation.
+> **Network shares:** Shared resources hosted on `dc-1` and accessed from the employee workstation.
 
-### 👥 Controlling Access with Security Groups
+### 👥 Security Group-Based Access
 
-I also created an Active Directory security group named `ACCOUNTANTS`.
+I created an Active Directory security group named `ACCOUNTANTS` so access to the Accounting folder could be controlled by group membership.
 
-The goal was simple:
-
-> Only employees who belong to the `ACCOUNTANTS` group should be able to access the Accounting folder.
-
-A test employee initially could not access the folder because the account was not part of the group.
-
-I added the employee to `ACCOUNTANTS`, signed out and back into `client-1` to refresh the user's access, and tested the folder again.
+The test employee was initially unable to access the folder. After adding the employee to `ACCOUNTANTS` and refreshing the user's session, the employee could access the folder and create and edit a test file.
 
 ```text
 Employee
@@ -289,13 +249,11 @@ Accounting Share
 Read / Write Access ✓
 ```
 
-The employee could now open the Accounting folder and create and edit a test file.
-
 ![Accounting Group Resource Access](images/accounting-group-access.png)
 
 > **Access verification:** An authorized employee successfully creating and editing a file within the Accounting network share.
 
-This simulated a common IT support request where an employee needs access to a department resource and an administrator grants that access through the appropriate security group.
+This simulated a common IT support request: **an employee needs access to a department resource, and access is granted through the appropriate security group.**
 
 ---
 
@@ -305,19 +263,21 @@ This project gave me hands-on experience supporting a **Windows business environ
 
 I practiced:
 
-- 🏢 **Active Directory** — Managing employee accounts, computers, groups, and organizational units
+- 🏢 **Active Directory** — Managing users, computers, groups, and organizational units
 - 👤 **User Support** — Resetting passwords, unlocking accounts, and resolving access issues
 - 🔐 **Group Policy** — Applying centralized account security rules
 - 🌐 **DNS & Networking** — Connecting systems and troubleshooting name resolution
-- 📁 **File Sharing** — Creating shared company resources with different access levels
-- 👥 **Access Control** — Using security groups to give employees access based on their role
+- 📁 **File Sharing** — Creating shared resources with different access levels
+- 👥 **Access Control** — Managing resource access through security groups
 - ☁️ **Microsoft Azure** — Hosting and connecting Windows Server and Windows client systems
-- 🛠️ **Troubleshooting** — Identifying an issue, applying a solution, and verifying that the solution worked
+- 🛠️ **Troubleshooting** — Identifying issues, applying solutions, and verifying results
 
-Most importantly, this project helped me understand how **user accounts, employee computers, authentication, security policies, DNS, and shared resources work together in a Windows domain environment**.
+Most importantly, I learned how **users, computers, authentication, security policies, DNS, and shared resources work together within a Windows domain**.
+
+---
 
 ### 📚 Project Context
 
-This project was completed as part of hands-on **CourseCareers IT training** and documented as a portfolio project to demonstrate the technical skills and support workflows I practiced.
+This project was completed as part of hands-on **CourseCareers IT training** and documented to demonstrate the technical skills and support workflows I practiced.
 
-The environment is an **educational lab** that simulates common Windows IT administration and Help Desk responsibilities rather than a production deployment.
+This is an **educational lab environment** designed to simulate common Windows IT administration and Help Desk responsibilities.
