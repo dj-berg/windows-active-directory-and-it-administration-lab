@@ -26,28 +26,25 @@ The result is a working Windows domain environment that demonstrates how core IT
 
 ## 🏗️ Environment & Technologies
 
-The environment consists of two Windows virtual machines connected through the same **Microsoft Azure virtual network**.
+The lab uses two Azure virtual machines on the same virtual network: a Windows Server domain controller and a Windows 11 employee workstation.
 
 ```text
-                       Microsoft Azure
-                             │
-                  Active-Directory-VNet
-                             │
-               ┌─────────────┴─────────────┐
-               │                           │
-             DC-1                      CLIENT-1
-      Windows Server 2022             Windows 11 Pro
-               │                           │
-       Domain Controller              Employee Workstation
-       Static Private IP                    │
-               │                           │
-               ├───── mydomain.com ───────┤
-               │                           │
-               ▼                           ▼
-      Active Directory              Domain Authentication
-      DNS                           DNS Resolution
-      Group Policy                  Policy Testing
-      Network Shares                Resource Access
+Microsoft Azure
+      │
+Active-Directory-VNet
+      │
+      ├── DC-1
+      │   Windows Server 2022
+      │   Domain Controller
+      │   ├── Active Directory
+      │   ├── DNS
+      │   ├── Group Policy
+      │   └── Network Shares
+      │
+      └── CLIENT-1
+          Windows 11 Pro
+          Employee Workstation
+          └── Joined to mydomain.com
 ```
 
 ### 🛠️ Technologies
@@ -113,7 +110,7 @@ mydomain.com
 ├── _ADMINS
 ├── _EMPLOYEES
 ├── _CLIENTS
-│     └── client-1
+│   └── client-1
 └── _GROUPS
 ```
 
@@ -234,7 +231,7 @@ I verified that an employee could:
 
 I created an Active Directory security group named `ACCOUNTANTS` so access to the Accounting folder could be controlled by group membership.
 
-The test employee was initially unable to access the folder. After adding the employee to `ACCOUNTANTS` and refreshing the user's session, the employee could access the folder and create and edit a test file.
+The test employee was initially unable to access the folder. After adding the employee to `ACCOUNTANTS` and signing out and back into `client-1`, the employee could access the folder and create and edit a test file.
 
 ```text
 Employee
