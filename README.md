@@ -1,643 +1,300 @@
-# 🏢 Windows Active Directory & IT Administration
+# 🖥️ Windows Active Directory & IT Administration
 
-A hands-on Windows administration project built in **Microsoft Azure** to simulate a small enterprise domain environment. This project covers the deployment and administration of **Active Directory Domain Services (AD DS), DNS, Group Policy, domain users and groups, Windows client authentication, and network file shares and permissions**.
-
-The environment consists of a **Windows Server 2022 domain controller** and a **Windows 11 Pro client workstation**, allowing configurations to be administered from the server and tested from an end-user workstation.
+A hands-on Windows enterprise environment built in **Microsoft Azure** to practice **Active Directory administration, Windows Server management, DNS, Group Policy, user support, and network resource access**.
 
 ---
 
-## 📋 Project Overview
+## 🎯 Project Overview
 
-The goal of this project was to build and administer a functional Windows domain environment while practicing common **IT support and system administration responsibilities**.
+This project simulates a small Windows business environment using a **Windows Server 2022 domain controller** and a **Windows 11 Pro client workstation** hosted in Microsoft Azure.
 
-During the project, I:
+I built and administered the environment to practice common IT support responsibilities, including **managing domain users and computers, configuring account security policies, troubleshooting DNS and authentication issues, and controlling access to shared network resources**.
 
-- Deployed Windows Server 2022 and Windows 11 Pro virtual machines in Microsoft Azure
-- Configured private IP addressing and DNS communication between the virtual machines
-- Installed Active Directory Domain Services and created a Windows domain
-- Joined a Windows 11 workstation to the domain
-- Created and managed Organizational Units (OUs), users, administrators, computers, and security groups
-- Provisioned multiple employee accounts using a PowerShell script
-- Configured and tested an account lockout policy through Group Policy
-- Practiced account unlocks, password resets, account disabling, and account re-enabling
-- Configured and tested DNS A and CNAME records
-- Created network file shares with different access levels
-- Implemented security group-based access to an Accounting network share
-- Tested and troubleshot configurations from a domain-joined client workstation
+The project demonstrates how core Windows services work together to centrally manage users, computers, security, and resources within an Active Directory domain.
 
 ---
 
-## 🏗️ Environment & Architecture
+## 🏗️ Environment & Technologies
 
-The lab environment was hosted in **Microsoft Azure** using two virtual machines connected through the same Azure Virtual Network.
+The environment consists of two Azure virtual machines connected through the same virtual network:
 
 ```text
-                         Microsoft Azure
-                               │
-                    Active-Directory-VNet
-                               │
-              ┌────────────────┴────────────────┐
-              │                                 │
-            DC-1                            CLIENT-1
-     Windows Server 2022                 Windows 11 Pro
-      Domain Controller                Domain Workstation
-      Static Private IP
-              │                                 │
-              │          mydomain.com           │
-              ├─────────────────────────────────┤
-              │                                 │
-       Active Directory                  Domain Authentication
-       DNS                               DNS Resolution
-       Group Policy                      File Share Access
-       Network Shares                    Policy Testing
+                       Microsoft Azure
+                             │
+                  Active-Directory-VNet
+                             │
+               ┌─────────────┴─────────────┐
+               │                           │
+             DC-1                      CLIENT-1
+      Windows Server 2022             Windows 11 Pro
+               │                           │
+       Domain Controller              Domain Workstation
+       Static Private IP                    │
+               │                           │
+               ├───── mydomain.com ───────┤
+               │                           │
+               ▼                           ▼
+      Active Directory              Domain Authentication
+      DNS                           DNS Resolution
+      Group Policy                  Policy Testing
+      Network Shares                Resource Access
 ```
 
-### DC-1 — Domain Controller
+| Area | Technology |
+| --- | --- |
+| **Cloud Platform** | Microsoft Azure |
+| **Server** | Windows Server 2022 |
+| **Client** | Windows 11 Pro |
+| **Directory Services** | Active Directory Domain Services |
+| **Networking** | TCP/IP, Azure Virtual Network, DNS |
+| **Policy Management** | Group Policy |
+| **Administration** | ADUC, DNS Manager, Event Viewer |
+| **Command Line** | PowerShell |
+| **Remote Access** | Remote Desktop |
 
-`dc-1` was configured as the central server for the environment and provided:
+<!--
+📸 SCREENSHOT 1 — AZURE ENVIRONMENT
+Place here: directly below the technology table.
+Capture: Azure showing both dc-1 and client-1 virtual machines.
+Purpose: Proves the two-machine cloud environment was deployed.
+Avoid showing: public IPs, subscription IDs, credentials, or unnecessary account information.
+-->
 
-- Active Directory Domain Services
-- Domain authentication
-- DNS
-- Group Policy
-- User and group administration
-- Network file shares
+![Azure Active Directory Lab Environment](docs/images/azure-environment.png)
 
-### Client-1 — Domain Workstation
-
-`client-1` was configured as a Windows 11 Pro workstation and used to simulate an employee computer.
-
-It was used to test:
-
-- Domain authentication
-- DNS resolution
-- Group Policy
-- Account lockouts
-- Remote Desktop access
-- Network file share permissions
-- Security group-based access
-
-> ### 📸 SCREENSHOT 1 — Azure Lab Infrastructure
-> **Take a screenshot of:** Microsoft Azure showing both the `dc-1` and `client-1` virtual machines.
->
-> **The screenshot should clearly show:** Both VM names and that they exist inside your Azure environment. Avoid displaying public IP addresses, subscription IDs, or credentials.
->
-> **Purpose:** Proves that the Windows Server and Windows 11 systems used throughout the project were deployed in Azure.
+> **Environment:** Windows Server and Windows 11 virtual machines deployed in Microsoft Azure.
 
 ---
 
-## 🛠️ Technologies & Skills
+## ☁️ Azure Infrastructure & Networking
 
-### Technologies
+I created the `Active-Directory-Lab` resource group and `Active-Directory-VNet`, then deployed:
 
-- Microsoft Azure
-- Windows Server 2022
-- Windows 11 Pro
-- Active Directory Domain Services (AD DS)
-- DNS
-- Group Policy
-- PowerShell
-- Command Prompt
-- Remote Desktop
-- Windows Event Viewer
-- Windows File Sharing
+- 🖥️ **dc-1** — Windows Server 2022
+- 💻 **client-1** — Windows 11 Pro
 
-### Skills Demonstrated
+I configured `dc-1` with the static private IP address `10.0.1.4` so it could provide a consistent address for domain and DNS services. I then configured `client-1` to use `dc-1` as its DNS server.
 
-- Windows Server administration
-- Active Directory administration
-- Domain user management
-- Organizational Unit management
-- Security group management
-- Domain joining
-- DNS configuration and troubleshooting
-- Group Policy configuration
-- Account lockout troubleshooting
-- Password resets
-- User account enable/disable management
-- Network file sharing
-- Access control and permissions
-- TCP/IP connectivity troubleshooting
-- Windows security event inspection
-
----
-
-# 🚀 Implementation
-
-## 1. Azure Infrastructure & Network Configuration
-
-I began by creating the infrastructure required to host the Windows domain environment.
-
-In Microsoft Azure, I created:
-
-- **Resource Group:** `Active-Directory-Lab`
-- **Virtual Network:** `Active-Directory-VNet`
-- **Windows Server 2022 VM:** `dc-1`
-- **Windows 11 Pro VM:** `client-1`
-
-The two virtual machines were connected to the same Azure Virtual Network so they could communicate over their private IP addresses.
-
-### Configuring the Domain Controller's Network
-
-I changed the private IP configuration of `dc-1` from **dynamic to static**.
-
-Because `dc-1` would provide DNS and Active Directory services to domain clients, maintaining a consistent private IP address allows clients to reliably locate the server.
-
-I then configured the DNS settings of `client-1` to use the private IP address of `dc-1` as its DNS server.
-
-```text
-CLIENT-1
-    │
-    │ DNS Requests
-    ▼
-  DC-1
-10.0.1.4
-```
-
-After restarting `client-1` to apply the network changes, I tested connectivity from the client to the server using PowerShell:
+From `client-1`, I verified the DNS configuration with `ipconfig /all` and tested network connectivity to the server:
 
 ```powershell
 ping 10.0.1.4
 ```
 
-The test returned four successful replies with **0% packet loss**, confirming network communication between the two virtual machines.
+The test returned four successful replies with **0% packet loss**, confirming communication between the workstation and server.
 
-I also used:
+<!--
+📸 SCREENSHOT 2 — NETWORK CONNECTIVITY
+Place here: immediately after the connectivity explanation.
+Capture: PowerShell on client-1 showing the successful ping to 10.0.1.4.
+Best screenshot: Include all four replies and the 0% packet-loss summary.
+Purpose: Proves client-1 could communicate with dc-1.
+-->
 
-```powershell
-ipconfig /all
-```
+![Client to Domain Controller Connectivity](docs/images/client-dc-connectivity.png)
 
-to verify that `client-1` was configured to use `dc-1` as its DNS server.
+> **Connectivity verification:** `client-1` successfully communicating with `dc-1` across the Azure virtual network.
 
-> ### 📸 SCREENSHOT 2 — Client-to-Server Connectivity
-> **Take a screenshot of:** PowerShell on `client-1` after running `ping 10.0.1.4`.
->
-> **The screenshot should clearly show:** Four successful replies and the ping statistics showing `0% loss`.
->
-> **Purpose:** Demonstrates successful private network connectivity between the Windows 11 workstation and Domain Controller.
+> ⚠️ **Lab Note:** The Windows Firewall profiles on `dc-1` were temporarily disabled as part of the isolated training environment. In a production environment, required traffic should instead be permitted through appropriately scoped firewall rules.
 
 ---
 
-## 2. Active Directory Domain Deployment
+## 🏢 Active Directory & User Administration
 
-With network communication established, I installed the **Active Directory Domain Services (AD DS)** server role on `dc-1`.
-
-I then promoted `dc-1` to a **Domain Controller** and created a new forest with the domain:
+After establishing network connectivity, I installed **Active Directory Domain Services (AD DS)** on `dc-1` and promoted the server to a domain controller for:
 
 ```text
 mydomain.com
 ```
 
-This established centralized domain services for the lab environment.
-
-Instead of managing `dc-1` and `client-1` as completely independent Windows computers, Active Directory could now centrally manage users, computers, authentication, groups, and policies.
-
----
-
-## 3. Organizational Units & Domain Administration
-
-Using **Active Directory Users and Computers**, I created Organizational Units to logically separate different types of domain objects.
-
-The domain was organized into:
+Using **Active Directory Users and Computers**, I organized domain resources into several organizational units:
 
 ```text
 mydomain.com
 │
 ├── _ADMINS
+│     └── jane_admin
+│
 ├── _EMPLOYEES
+│     └── Employee Accounts
+│
 ├── _CLIENTS
+│     └── client-1
+│
 └── _GROUPS
+      └── Security Groups
 ```
 
-The OUs were used for different purposes:
+I created a dedicated administrative account, joined `client-1` to the domain, and moved the workstation into the `_CLIENTS` OU.
 
-- `_ADMINS` — Administrative user accounts
-- `_EMPLOYEES` — Standard domain employee accounts
-- `_CLIENTS` — Domain-joined client computers
-- `_GROUPS` — Security groups used for resource access
+I also executed a **provided PowerShell provisioning script** to generate employee accounts in `_EMPLOYEES` and practiced common Active Directory support tasks:
 
-### Creating a Domain Administrator
+- 👤 Managing domain users
+- 🔑 Resetting passwords
+- 🔓 Unlocking accounts
+- 🚫 Disabling and re-enabling accounts
+- 👥 Managing security group membership
+- 💻 Authenticating domain users from `client-1`
+- 🔎 Reviewing security events with Event Viewer
 
-Inside `_ADMINS`, I created a dedicated administrative account and added it to the built-in:
+I validated domain authentication from the employee workstation using `whoami` to confirm the active domain identity.
 
-```text
-Domain Admins
-```
+<!--
+📸 SCREENSHOT 3 — ACTIVE DIRECTORY
+Place here: after the AD administration explanation.
+Capture: Active Directory Users and Computers.
+Best screenshot: Show mydomain.com expanded with _ADMINS, _EMPLOYEES,
+_CLIENTS, and _GROUPS. Ideally show client-1 inside _CLIENTS.
+Purpose: This is one of the strongest screenshots—it proves the domain,
+OU structure, workstation, and overall AD organization.
+-->
 
-security group.
+![Active Directory Domain Structure](docs/images/active-directory-structure.png)
 
-I then authenticated to `dc-1` using the domain administrator account and used it for subsequent domain administration.
-
-### Joining Client-1 to the Domain
-
-`client-1` initially belonged to a standard Windows workgroup.
-
-I changed its membership from the workgroup to:
-
-```text
-mydomain.com
-```
-
-and authenticated the domain join using the administrator account.
-
-After successfully joining the domain, the `client-1` computer object appeared in Active Directory. I moved it from the default Computers container into the `_CLIENTS` Organizational Unit.
-
-> ### 📸 SCREENSHOT 3 — Active Directory OU Structure
-> **Take a screenshot of:** Active Directory Users and Computers on `dc-1`.
->
-> **The screenshot should clearly show:** `mydomain.com` expanded with `_ADMINS`, `_EMPLOYEES`, `_CLIENTS`, and `_GROUPS` visible.
->
-> If possible, select `_CLIENTS` so that `client-1` is visible in the right pane.
->
-> **Purpose:** This is one of the most important screenshots in the project. It proves that the Active Directory domain exists and shows how you organized its users, computers, and groups.
+> **Active Directory:** Domain resources organized into administrative, employee, client, and security group organizational units.
 
 ---
 
-## 4. Domain User Provisioning & Authentication
+## 🔐 Group Policy & Account Security
 
-After establishing the domain, I configured `client-1` to allow members of **Domain Users** to remotely access the workstation.
+I used **Group Policy Management** to configure and test centralized account security policies.
 
-To populate the domain with simulated employees, I executed a provided **PowerShell user-provisioning script** from `dc-1`.
+For the domain account lockout policy, I configured:
 
-The generated employee accounts were placed inside:
+| Setting | Configuration |
+| --- | --- |
+| **Lockout Threshold** | 5 failed login attempts |
+| **Lockout Duration** | 30 minutes |
 
-```text
-_EMPLOYEES
-```
-
-This created multiple standard domain users that could be used to test authentication, Group Policy, account management, and permissions.
-
-> ### 📸 SCREENSHOT 4 — Domain Employee Accounts
-> **Take a screenshot of:** Active Directory Users and Computers with `_EMPLOYEES` selected.
->
-> **The screenshot should clearly show:** Multiple generated employee accounts in the right pane.
->
-> **Purpose:** Demonstrates domain-user provisioning and centralized employee account management.
-
-### Testing Domain Authentication
-
-I selected one of the generated employee accounts and used it to sign into `client-1`.
-
-```text
-Employee Credentials
-        │
-        ▼
-     CLIENT-1
-        │
-        ▼
-       DC-1
-        │
-        ▼
-Active Directory
-        │
-        ▼
-Successful Authentication
-```
-
-The successful login verified that `client-1` was communicating with the Domain Controller and could authenticate domain employees through Active Directory.
-
-> ### 📸 SCREENSHOT 5 — Domain-Authenticated Employee
-> **Take a screenshot of:** `client-1` after successfully logging in as one of the generated domain users.
->
-> A good option is to open Command Prompt or PowerShell and run:
->
-> ```powershell
-> whoami
-> ```
->
-> **The screenshot should clearly show:** The domain and employee username returned by `whoami`.
->
-> **Purpose:** Proves that a regular domain employee can authenticate to the domain-joined Windows 11 workstation.
-
----
-
-# 🔐 Group Policy & Account Administration
-
-## 5. Configuring an Account Lockout Policy
-
-I used **Group Policy Management** on `dc-1` to configure an account lockout policy through the Default Domain Policy.
-
-The environment was configured to lock an account after:
-
-```text
-Failed Login Threshold: 5 attempts
-Lockout Duration:       30 minutes
-```
-
-I then forced `client-1` to retrieve the updated Group Policy settings using:
+I applied the updated policy to `client-1` using:
 
 ```powershell
 gpupdate /force
 ```
 
-This allowed the new security policy to take effect without waiting for the normal Group Policy refresh interval.
+To validate the policy, I intentionally exceeded the failed-login threshold with a test employee account. The account was successfully locked by the domain policy.
 
-> ### 📸 SCREENSHOT 6 — Group Policy Account Lockout
-> **Take a screenshot of:** Group Policy Management / Group Policy Management Editor showing the Account Lockout Policy settings.
->
-> **The screenshot should clearly show:** The `5` failed-attempt threshold and `30 minute` lockout setting.
->
-> **Purpose:** Demonstrates that you configured a domain-wide security policy rather than relying only on default Windows settings.
+I then approached the issue as an administrator: located the affected account in Active Directory, unlocked it, and successfully authenticated again from `client-1`.
+
+```text
+Failed Login Attempts
+        │
+        ▼
+  Account Locked
+        │
+        ▼
+  Identify User in AD
+        │
+        ▼
+   Unlock Account
+        │
+        ▼
+  Verify User Login ✓
+```
+
+<!--
+📸 SCREENSHOT 4 — GROUP POLICY
+Place here: after the lockout workflow.
+Capture: Group Policy Management showing the account lockout configuration.
+Best screenshot: Clearly show the 5-attempt threshold and 30-minute duration.
+Purpose: Proves you configured a centralized domain security policy.
+-->
+
+![Group Policy Account Lockout Settings](docs/images/account-lockout-policy.png)
+
+> **Account security:** Domain account lockout policy configured and tested through Group Policy.
 
 ---
 
-## 6. Testing & Troubleshooting Account Lockouts
+## 🌐 DNS & Name Resolution
 
-To verify that the new policy worked, I intentionally entered an incorrect password repeatedly for a test employee account on `client-1`.
-
-```text
-Incorrect Password Attempts
-           │
-           ▼
-5 Failed Authentication Attempts
-           │
-           ▼
-      Account Locked
-```
-
-The account became locked as expected.
-
-From `dc-1`, I located the affected employee through **Active Directory Users and Computers** and manually unlocked the account.
-
-I then successfully authenticated to `client-1` again and used:
-
-```powershell
-whoami
-```
-
-to verify the logged-in domain account.
-
-This simulated a common Help Desk scenario in which an employee becomes locked out of their account and requires assistance from IT.
-
-> ### 📸 SCREENSHOT 7 — Locked Account / Account Recovery
-> **Take a screenshot of:** Active Directory Users and Computers showing the test employee's Account properties after the lockout.
->
-> **Ideally show:** The account lockout/unlock area or the account immediately before you unlock it.
->
-> **Purpose:** Demonstrates hands-on Active Directory account troubleshooting and recovery.
->
-> **Alternative:** If the account is no longer locked and recreating it is inconvenient, use a screenshot showing the employee's Account properties in AD rather than manufacturing a fake lockout.
-
-### Additional Account Administration
-
-I also practiced common Active Directory account-management tasks, including:
-
-- Resetting employee passwords
-- Disabling user accounts
-- Re-enabling user accounts
-- Unlocking locked accounts
-
-I opened **Windows Event Viewer** using:
-
-```text
-eventvwr.msc
-```
-
-to explore Windows security logs and see how authentication and security-related activity can be investigated.
-
----
-
-# 🌐 DNS Administration & Troubleshooting
-
-## 7. Creating DNS A Records
-
-Because `dc-1` also provided DNS services for the domain, I used **DNS Manager** to configure and test name resolution.
+With `dc-1` providing DNS services, I practiced configuring and troubleshooting **Windows DNS name resolution** from the domain workstation.
 
 Initially, `client-1` could not resolve the hostname:
-
-```text
-mainframe
-```
-
-I created a new **Host (A) record** on `dc-1` mapping:
-
-```text
-mainframe
-    │
-    ▼
-10.0.1.4
-```
-
-After creating the record, I tested name resolution from `client-1` using:
 
 ```powershell
 ping mainframe
 ```
 
-The hostname successfully resolved to the configured IP address.
+Using DNS Manager on `dc-1`, I created an **A record** mapping:
 
-> ### 📸 SCREENSHOT 8 — DNS Records
-> **Take a screenshot of:** DNS Manager on `dc-1`.
->
-> **The screenshot should clearly show:** Your `mainframe` A record. If possible, also have the `search` CNAME record visible in the same screenshot.
->
-> **Purpose:** Demonstrates that you created and administered DNS records on the Windows DNS server.
-
----
-
-## 8. DNS Cache & Name Resolution Troubleshooting
-
-While testing DNS, I also worked with the local Windows DNS resolver cache.
-
-I used:
-
-```powershell
-ipconfig /displaydns
+```text
+mainframe → 10.0.1.4
 ```
 
-to inspect locally cached DNS information and:
+I then retested from `client-1`, and the hostname successfully resolved to `10.0.1.4`.
+
+During testing, I also cleared the client's DNS resolver cache with:
 
 ```powershell
 ipconfig /flushdns
 ```
 
-to clear cached records and force the client to request updated DNS information.
+I additionally created a **CNAME alias** to practice hostname aliasing:
 
-This demonstrated how cached DNS information can affect troubleshooting after DNS records have been changed.
-
-I also used commands such as:
-
-```powershell
-hostname
-ipconfig
-ping
+```text
+search → www.google.com
 ```
 
-to inspect the workstation and test connectivity and name resolution.
+and verified the alias from `client-1`.
 
-> ### 📸 SCREENSHOT 9 — Successful DNS Resolution
-> **Take a screenshot of:** PowerShell or Command Prompt on `client-1` after running:
->
-> ```powershell
-> ping mainframe
-> ```
->
-> **The screenshot should clearly show:** `mainframe` resolving to `10.0.1.4` and receiving successful replies.
->
-> **Purpose:** Screenshot 8 proves you configured DNS; this screenshot proves that the DNS configuration actually worked from the client.
+<!--
+📸 SCREENSHOT 5 — DNS RESOLUTION
+Place here: after the DNS explanation.
+Capture: PowerShell on client-1 showing a successful "ping mainframe".
+Best screenshot: Make sure "mainframe" resolving to 10.0.1.4 is visible.
+Purpose: Shows the RESULT of your DNS configuration rather than simply
+showing that a record exists in DNS Manager.
+-->
+
+![DNS Name Resolution Test](docs/images/dns-mainframe-resolution.png)
+
+> **DNS verification:** `client-1` successfully resolving the `mainframe` hostname through the DNS service running on `dc-1`.
+
+This exercise demonstrated a basic troubleshooting workflow:
+
+**Name fails to resolve → check DNS → configure record → retest → verify resolution.**
 
 ---
 
-## 9. Creating a CNAME Record
+## 📁 File Shares & Access Control
 
-I also created a **CNAME (Canonical Name) record** to practice working with DNS aliases.
+I configured network shares on `dc-1` and tested access from domain users on `client-1`.
 
-The alias:
-
-```text
-search
-```
-
-was configured to reference:
-
-```text
-www.google.com
-```
-
-I then tested the alias from `client-1` and verified that it resolved successfully.
-
-This demonstrated the difference between two common DNS record types:
-
-```text
-A Record
-Hostname ──────────► IP Address
-
-CNAME Record
-Alias ─────────────► Canonical Hostname
-```
-
----
-
-# 📁 Network File Shares & Permissions
-
-## 10. Creating Network File Shares
-
-On `dc-1`, I created several folders to simulate organizational network resources:
-
-```text
-\\dc-1
-│
-├── read-access
-├── write-access
-├── no-access
-└── accounting
-```
-
-Each folder was shared with different access requirements.
-
-| Network Share | Authorized Users | Access |
+| Resource | Authorized Users / Group | Access |
 | --- | --- | --- |
 | `read-access` | Domain Users | Read |
 | `write-access` | Domain Users | Read/Write |
 | `no-access` | Domain Admins | Read/Write |
 | `accounting` | ACCOUNTANTS | Read/Write |
 
-From `client-1`, I connected to the server using:
+From `client-1`, I accessed the server through:
 
 ```text
 \\dc-1
 ```
 
-and tested each share while authenticated as a regular domain employee.
+I verified that an employee could read but not create files in `read-access`, create files in `write-access`, and was denied access to the restricted `no-access` resource.
 
-> ### 📸 SCREENSHOT 10 — Network Shares from Client-1
-> **Take a screenshot of:** File Explorer on `client-1` after navigating to `\\dc-1`.
->
-> **The screenshot should clearly show:** `read-access`, `write-access`, `no-access`, and `accounting`.
->
-> **Purpose:** Demonstrates that the Windows Server is providing network resources that are discoverable from the domain workstation.
+### 👥 Group-Based Resource Access
 
----
+I created an `ACCOUNTANTS` Active Directory security group and configured the `accounting` resource for members of that group.
 
-## 11. Testing File Share Permissions
-
-I tested each permission level from the perspective of a regular domain employee.
-
-### Read-Only Share
-
-The employee could open the `read-access` share but could not create new files.
+A test employee initially could not access the resource because the account was not a member of `ACCOUNTANTS`.
 
 ```text
 Employee
    │
+   │ Not a Member
    ▼
-read-access
-   │
-   ├── ✓ Read
-   └── ✗ Write
-```
-
-### Read/Write Share
-
-The employee could access `write-access` and successfully create files.
-
-```text
-Employee
-   │
-   ▼
-write-access
-   │
-   ├── ✓ Read
-   └── ✓ Write
-```
-
-### Restricted Share
-
-The regular employee could not access `no-access`, while Domain Administrators were permitted.
-
-```text
-Employee ──────────► no-access ──► ✗ ACCESS DENIED
-
-Domain Admin ──────► no-access ──► ✓ ACCESS
-```
-
-These tests verified that the configured permissions were actually being enforced from the end-user workstation.
-
-> ### 📸 SCREENSHOT 11 — File Permission Enforcement
-> **Take a screenshot of:** One of your permission tests from `client-1`.
->
-> **Best option:** Attempt to open `no-access` while logged in as a standard domain employee and capture the Windows access-denied message.
->
-> **Alternative:** Show the employee successfully creating a file inside `write-access`.
->
-> **Purpose:** Provides visible proof that the permissions configured on the server were being enforced for domain users.
-
----
-
-## 12. Security Group-Based Access Control
-
-I created the `_GROUPS` Organizational Unit and created an Active Directory security group named:
-
-```text
 ACCOUNTANTS
-```
-
-I then configured the `accounting` network share so that members of the `ACCOUNTANTS` security group received **Read/Write** access.
-
-Initially, a regular employee who was not a member of the group could not access the Accounting share.
-
-```text
-Employee
    │
-   ▼
-ACCOUNTANTS membership?
-   │
-   └── No
-       │
-       ▼
-Accounting Share
-       │
-       ✗ ACCESS DENIED
+   ✕
+Accounting
+ACCESS DENIED
 ```
 
-I then added the employee to:
-
-```text
-ACCOUNTANTS
-```
-
-After logging out and back into `client-1` so that the updated group membership would apply:
+After adding the employee to `ACCOUNTANTS` and signing out and back into `client-1`:
 
 ```text
 Employee
@@ -646,177 +303,39 @@ Employee
 ACCOUNTANTS
    │
    ▼
-Accounting Share
-   │
-   ✓ READ / WRITE
+Accounting
+ACCESS GRANTED ✓
 ```
 
-the employee could successfully access the Accounting folder.
+This simulated a common IT support scenario where an employee cannot access a department resource because the account does not have the required group membership.
 
-This demonstrated how **Active Directory security groups can be used to control access to organizational resources based on an employee's role**.
+<!--
+📸 SCREENSHOT 6 — FILE SHARE / ACCOUNTANTS ACCESS
+Place here: after the ACCOUNTANTS scenario.
+Capture: Your strongest evidence of the ACCOUNTANTS exercise.
+Ideal option: client-1 successfully accessing the accounting share after
+the employee was added to ACCOUNTANTS.
+Alternative: ADUC showing the employee as a member of ACCOUNTANTS if that
+more clearly demonstrates what you configured.
+Purpose: Proves group-based access control worked from the user's perspective.
+-->
 
-> ### 📸 SCREENSHOT 12 — ACCOUNTANTS Group-Based Access
-> **Take a screenshot of:** Active Directory Users and Computers with the `ACCOUNTANTS` group properties open on the **Members** tab.
->
-> **The screenshot should clearly show:** Your test employee listed as a member of `ACCOUNTANTS`.
->
-> **Even better:** If you want to combine two images here, follow it with a small screenshot showing that same employee successfully accessing the `accounting` share from `client-1`.
->
-> **Purpose:** Demonstrates role/group-based access control rather than assigning permissions individually to every employee.
+![Accounting Group Resource Access](docs/images/accounting-group-access.png)
 
----
-
-# 🔧 IT Administration & Troubleshooting Scenarios
-
-The environment was also used to practice several scenarios similar to issues an IT support technician or system administrator could encounter.
-
-## 🔐 Scenario 1 — Employee Account Lockout
-
-**Problem:**  
-An employee exceeded the domain's permitted number of failed login attempts and became locked out.
-
-**Investigation:**  
-Located the employee account in Active Directory and confirmed the account lockout.
-
-**Resolution:**  
-Unlocked the account from the Domain Controller and verified that the employee could authenticate successfully again.
-
-**Skills demonstrated:**  
-`Active Directory` · `Group Policy` · `Account Management` · `Authentication Troubleshooting`
+> **Access verification:** Employee access to the Accounting resource after receiving membership in the appropriate Active Directory security group.
 
 ---
 
-## 🌐 Scenario 2 — DNS Name Resolution
+## 💡 Key Takeaways
 
-**Problem:**  
-`client-1` could not initially resolve the hostname `mainframe`.
+This project gave me hands-on experience administering and troubleshooting a **Windows Active Directory domain** from both the administrator and employee perspectives.
 
-**Investigation:**  
-The required DNS record did not exist on the DNS server.
+I practiced deploying Windows systems in Azure, administering Active Directory users and computers, applying Group Policy, resolving account access issues, configuring DNS, managing security groups, and controlling access to shared network resources.
 
-**Resolution:**  
-Created an A record on `dc-1` and verified successful name resolution from `client-1`.
+Most importantly, the project connected these individual technologies into one environment and demonstrated how **identity, authentication, networking, security policies, DNS, and resource permissions work together to support users in a Windows domain**.
 
-**Skills demonstrated:**  
-`DNS` · `Windows Server` · `TCP/IP` · `Name Resolution` · `Troubleshooting`
+### 📚 Project Context
 
----
+This project was completed as part of hands-on **CourseCareers IT training** and documented as a portfolio project to demonstrate the technical skills and troubleshooting workflows I practiced.
 
-## 📁 Scenario 3 — Employee Cannot Access Accounting Share
-
-**Problem:**  
-A domain employee could not access the Accounting network share.
-
-**Investigation:**  
-The employee was not a member of the `ACCOUNTANTS` security group that had permission to the resource.
-
-**Resolution:**  
-Added the employee to `ACCOUNTANTS`, refreshed the user's session by signing out and back in, and verified successful access to the Accounting share.
-
-**Skills demonstrated:**  
-`Active Directory` · `Security Groups` · `File Sharing` · `Permissions` · `Access Control`
-
----
-
-# 💻 Commands Used
-
-Several Windows networking and administration commands were used throughout the project.
-
-```powershell
-# Test network connectivity
-ping 10.0.1.4
-
-# View network configuration
-ipconfig
-ipconfig /all
-
-# View locally cached DNS records
-ipconfig /displaydns
-
-# Clear the local DNS resolver cache
-ipconfig /flushdns
-
-# Force Group Policy to update
-gpupdate /force
-
-# Display the currently authenticated user
-whoami
-
-# Display the computer hostname
-hostname
-```
-
-Administrative tools used throughout the project included:
-
-```text
-Server Manager
-Active Directory Users and Computers
-DNS Manager
-Group Policy Management
-Windows Event Viewer
-PowerShell / PowerShell ISE
-Remote Desktop Connection
-```
-
----
-
-# 💡 Key Takeaways
-
-This project gave me hands-on experience building and administering a Windows domain environment from both the **administrator and end-user perspectives**.
-
-Key concepts I practiced included:
-
-- Deploying Windows infrastructure in Microsoft Azure
-- Understanding the relationship between Active Directory and DNS
-- Centrally managing domain users and computers
-- Organizing domain resources with Organizational Units
-- Managing administrative privileges and security groups
-- Enforcing authentication policies through Group Policy
-- Troubleshooting account lockouts and authentication problems
-- Creating and troubleshooting DNS records
-- Understanding and managing the Windows DNS cache
-- Configuring network file shares
-- Controlling resource access through group membership and permissions
-- Testing administrative configurations from an end-user workstation
-
-Most importantly, the project demonstrated how several Windows enterprise technologies work together:
-
-```text
-Active Directory
-      │
-      ├── Centralized Identity & Authentication
-      │
-DNS ──┼── Name Resolution
-      │
-GPO ──┼── Domain Security Policies
-      │
-Groups┼── Role-Based Access
-      │
-Shares┴── Organizational Resources
-```
-
-Rather than treating these technologies as isolated concepts, I was able to configure and test how they interact inside a functional Windows domain environment.
-
----
-
-# 📚 Project Background
-
-This project was completed as part of hands-on IT training through **CourseCareers**. The environment was used to apply Windows administration concepts in a simulated enterprise setting.
-
-The configurations, testing, troubleshooting, and documentation shown in this repository reflect the hands-on work I completed while building and administering the environment.
-
----
-
-# 🔒 Security
-
-All credentials used during the lab were created specifically for the temporary lab environment and have been intentionally excluded from this repository.
-
-Screenshots included in this documentation are reviewed before publication to avoid exposing:
-
-- Passwords
-- Public IP addresses
-- Azure subscription information
-- Sensitive account information
-- Unnecessary identifying information
-
----
+The environment is an **educational lab** designed to simulate common Windows IT administration and support responsibilities rather than a production deployment.
